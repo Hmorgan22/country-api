@@ -3,20 +3,8 @@
 const btn = document.querySelector('.btn-country');
 const countriesContainer = document.querySelector('.countries');
 
-///////////////////////////////////////
-const getCountryData = function (country) {
-  const request = new XMLHttpRequest();
-  request.open(
-    'GET',
-    `https://countries-api-836d.onrender.com/countries/name/${country}`
-  );
-  request.send();
-
-  request.addEventListener('load', function () {
-    const [data] = JSON.parse(this.responseText);
-    console.log(data);
-
-    const html = `<article class="country">
+const renderCountry = function (data, className = '') {
+  const html = `<article class="country ${className}">
       <img class="country__img" src="${data.flag}" />
       <div class="country__data">
         <h3 class="country__name">${data.name}</h3>
@@ -28,12 +16,44 @@ const getCountryData = function (country) {
         <p class="country__row"><span>💰</span>${data.currencies[0].name}</p>
       </div>
     </article>`;
-    countriesContainer.insertAdjacentHTML('beforeend', html);
-    countriesContainer.style.opacity = 1;
+  countriesContainer.insertAdjacentHTML('beforeend', html);
+  countriesContainer.style.opacity = 1;
+};
+
+const getCountryAndNeighbor = function (country) {
+  //Ajax call for country 1
+  const request = new XMLHttpRequest();
+  request.open(
+    'GET',
+    `https://countries-api-836d.onrender.com/countries/name/${country}`
+  );
+  request.send();
+
+  request.addEventListener('load', function () {
+    const [data] = JSON.parse(this.responseText);
+
+    //render country 1
+    renderCountry(data);
+
+    //render neighboring country
+    const neighbor = data.borders?.[0];
+
+    if (!neighbor) return;
+    //ajax call 2
+    const request2 = new XMLHttpRequest();
+    request2.open(
+      'GET',
+      `https://countries-api-836d.onrender.com/countries/alpha/${neighbor}`
+    );
+    request2.send();
+
+    request2.addEventListener('load', function () {
+      const data2 = JSON.parse(this.responseText);
+
+      //render country 2
+      renderCountry(data2, 'neighbour');
+    });
   });
 };
 
-getCountryData('usa');
-getCountryData('portugal');
-getCountryData('japan');
-getCountryData('china');
+getCountryAndNeighbor('usa');
