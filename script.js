@@ -17,43 +17,50 @@ const renderCountry = function (data, className = '') {
       </div>
     </article>`;
   countriesContainer.insertAdjacentHTML('beforeend', html);
-  countriesContainer.style.opacity = 1;
 };
 
-const getCountryAndNeighbor = function (country) {
-  //Ajax call for country 1
-  const request = new XMLHttpRequest();
-  request.open(
-    'GET',
-    `https://countries-api-836d.onrender.com/countries/name/${country}`
-  );
-  request.send();
+const renderError = function (msg) {
+  countriesContainer.insertAdjacentText('beforeend', msg);
+};
 
-  request.addEventListener('load', function () {
-    const [data] = JSON.parse(this.responseText);
-
-    //render country 1
-    renderCountry(data);
-
-    //render neighboring country
-    const neighbor = data.borders?.[0];
-
-    if (!neighbor) return;
-    //ajax call 2
-    const request2 = new XMLHttpRequest();
-    request2.open(
-      'GET',
-      `https://countries-api-836d.onrender.com/countries/alpha/${neighbor}`
-    );
-    request2.send();
-
-    request2.addEventListener('load', function () {
-      const data2 = JSON.parse(this.responseText);
-
-      //render country 2
-      renderCountry(data2, 'neighbour');
-    });
+const getJSON = function (url, message) {
+  return fetch(url).then(response => {
+    if (!response.ok) {
+      throw new Error(`${message} (${response.status})`);
+    }
+    return response.json();
   });
 };
 
-getCountryAndNeighbor('usa');
+const getCountryAndNeighbor = function (country) {
+  //fetch for country 1
+  getJSON(
+    `https://countries-api-836d.onrender.com/countries/name/${country}`,
+    'country not found'
+  )
+    .then(data => {
+      renderCountry(data[0]);
+      const neighbour = data[0].borders?.[0];
+
+      if (!neighbour) {
+        throw new Error('Country does not have a neighbor');
+      }
+      //country 2
+      return getJSON(
+        `https://countries-api-836d.onrender.com/countries/alpha/${neighbour}`,
+        'no neighbor country found'
+      );
+    })
+    .then(data => renderCountry(data, 'neighbour'))
+    .catch(err => {
+      console.log(err);
+      renderError(`Something went wrong ${err.message}. Try again!`);
+    })
+    .finally(() => {
+      countriesContainer.style.opacity = 1;
+    });
+};
+
+btn.addEventListener('click', function () {
+  getCountryAndNeighbor('usa');
+});
